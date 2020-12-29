@@ -1,0 +1,233 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPC Cloudformation
+
+Resources:
+  Vpc01:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.10.0.0/16
+      EnableDnsHostnames: yes
+      EnableDnsSupport: yes
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: Vpc01
+  
+  Vpc01PublicAZa:
+    Type: AWS::EC2::Subnet 
+    Properties:
+      AvailabilityZone: ap-southeast-1a
+      CidrBlock: 10.10.0.0/20 #publicSubnet
+      MapPublicIpOnLaunch: yes
+      VpcId: !Ref Vpc01
+
+  Vpc01PublicAZb:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-southeast-1a
+      CidrBlock: 10.10.16.0/20 #publicSubnet
+      MapPublicIpOnLaunch: yes
+      VpcId: !Ref Vpc01
+
+  Vpc01PrivateAZc:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-southeast-1c
+      CidrBlock: 10.10.32.0/20 #privateSubnet
+      MapPublicIpOnLaunch: no
+      VpcId: !Ref Vpc01
+  
+  Vpc01IGW: #InternetGateway
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: 
+        - Key: Name 
+          Value: vpc01_igw
+  
+  NatIP: #EIPForNATGateway
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: vpc01_nat_eip
+
+  Vpc01NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatIP.AllocationId
+      SubnetId: !Ref Vpc01PublicAZa
+      Tags:
+        - Key: Name
+          Value: vpc01_NatGateway
+  
+  Vpc01IGWAttach: #InternetGatewayAttach
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Vpc01IGW
+      VpcId: !Ref Vpc01
+    
+  Vpc01PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Vpc01_Public
+      VpcId: !Ref Vpc01
+  
+  Vpc01PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Vpc01_Private
+      VpcId: !Ref Vpc01
+  
+  Vpc01PublicRoute:
+    Type: AWS::EC2::Route 
+    Properties:
+      RouteTableId: !Ref Vpc01PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Vpc01IGW #This is for Internet Gateway
+  
+  Vpc01PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Vpc01PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref Vpc01NatGateway #This is for NAT Gateway
+  
+  PublicAZaRouteSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation 
+    Properties:
+      RouteTableId: !Ref Vpc01PublicRouteTable
+      SubnetId: !Ref Vpc01PublicAZa
+  
+  PublicAZbRouteSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref Vpc01PublicRouteTable
+      SubnetId: !Ref Vpc01PublicAZb
+  
+  PrivateAZcRouteSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref Vpc01PrivateRouteTable
+      SubnetId: !Ref Vpc01PrivateAZc
+    
+  Vpc02:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 20.20.0.0/16
+      EnableDnsHostnames: yes
+      EnableDnsSupport: yes
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: Vpc02
+  
+  Vpc02PublicAZa:
+    Type: AWS::EC2::Subnet 
+    Properties:
+      AvailabilityZone: ap-southeast-1a
+      CidrBlock: 20.20.0.0/20 #publicSubnet
+      MapPublicIpOnLaunch: yes
+      VpcId: !Ref Vpc02
+
+  Vpc02PublicAZb:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-southeast-1b
+      CidrBlock: 20.20.16.0/20 #publicSubnet
+      MapPublicIpOnLaunch: yes
+      VpcId: !Ref Vpc02
+
+  Vpc02PrivateAZc:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-southeast-1c
+      CidrBlock: 20.20.32.0/20 #privateSubnet
+      MapPublicIpOnLaunch: no
+      VpcId: !Ref Vpc02
+  
+  Vpc02IGW: #InternetGateway
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: 
+        - Key: Name 
+          Value: vpc02_igw
+  
+  VPC02NatIP: #EIPForNATGateway
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: vpc02_nat_eip
+
+  Vpc02NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt VPC02NatIP.AllocationId
+      SubnetId: !Ref Vpc02PublicAZa
+      Tags:
+        - Key: Name
+          Value: vpc02_NatGateway
+  
+  Vpc02IGWAttach: #InternetGatewayAttach
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Vpc02IGW
+      VpcId: !Ref Vpc02
+    
+  Vpc02PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Vpc02_Public
+      VpcId: !Ref Vpc02
+  
+  Vpc02PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Vpc02_Private
+      VpcId: !Ref Vpc02
+  
+  Vpc02PublicRoute:
+    Type: AWS::EC2::Route 
+    Properties:
+      RouteTableId: !Ref Vpc02PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Vpc02IGW #This is for Internet Gateway
+  
+  Vpc02PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Vpc02PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref Vpc02NatGateway #This is for NAT Gateway
+  
+  VPC02PublicAZaRouteSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation 
+    Properties:
+      RouteTableId: !Ref Vpc02PublicRouteTable
+      SubnetId: !Ref Vpc02PublicAZa
+  
+  VPC02PublicAZbRouteSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref Vpc02PublicRouteTable
+      SubnetId: !Ref Vpc02PublicAZb
+  
+  VPC02PrivateAZcRouteSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref Vpc02PrivateRouteTable
+      SubnetId: !Ref Vpc02PrivateAZc
+      
+
+    
+
+
+      

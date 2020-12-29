@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: My Practice EC2 CloudFormation
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: SSH KeyPair
+    ConstraintDescription: Existing SSH KeyPair
+  
+Resources:
+  Web01:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      AvailabilityZone: ap-southeast-1a
+      ImageId: ami-00b8d9cb8a7161e41
+      KeyName: !Ref KeyName
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Web01
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install httpd -y
+          systemctl start httpd
+          systemctl enable httpd
+          echo This is Web01 Website > /var/www/html/index.html
+          systemctl restart httpd
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: PublicWebDMZ 
+      GroupDescription: PublicWebDMZ
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  
+  NewVolume:
+    Type: AWS::EC2::Volume 
+    Properties:
+      Size: 10
+      AvailabilityZone: !GetAtt Web01.AvailabilityZone
+  
+  MountPoint:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      InstanceId: !Ref Web01
+      VolumeId: !Ref NewVolume
+      Device: /dev/sdf
+
+
+Outputs:
+  Web01ID:
+    Description: The Instance ID
+    Value: !Ref Web01
+
+
+
